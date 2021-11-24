@@ -4,18 +4,27 @@
 # management api
 #    no shutdown
 #
+# Then enable this as daemon:
+#
+# daemon mos_eventhandler
+#    command /mnt/flash/mos_eventhandler.py
+#
 
-# Session to API server
 from jsonrpclib import Server
 import ssl
 import json
 
-_create_unverified_https_context = ssl._create_unverified_context
-ssl._create_default_https_context = _create_unverified_https_context
+# Configure API variables here:
 
 user='test'
 passwd = 'test'
 hostname = 'localhost'
+
+# Set up session to API server
+
+_create_unverified_https_context = ssl._create_unverified_context
+ssl._create_default_https_context = _create_unverified_https_context
+
 
 device = Server('https://{}:{}@{}/command-api'.format(user, passwd, hostname))
 
@@ -40,12 +49,17 @@ def watch(fn, words):
         else:
             time.sleep(0.5)
 
+# Configure file and command variables here:
+
 fn = '/var/log/messages'
-words = ['up', 'down']
-commands = ['show version']
+words = ['et41: Port administratively down', 'et41: Port administratively up']
+commands_up = ['configure','interface ethernet41', 'description set as up']
+commands_down = ['configure','interface ethernet41', 'description set as down']
 
 for hit_word, hit_sentence in watch(fn, words):
     # Execute command for every word that matches row in the log
     print "Found %r in line: %r" % (hit_word, hit_sentence)
-    result = device.runCmds(1, commands)
-    print json.dumps(result, indent=4, sort_keys=True)
+    if hit_word == 'et41: Port administratively up':
+        result = device.runCmds(1, commands_up)
+    if hit_word == 'et41: Port administratively down':
+        result = device.runCmds(1, commands_down)
